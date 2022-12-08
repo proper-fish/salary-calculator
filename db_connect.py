@@ -24,57 +24,67 @@ class SaleEntry(NamedTuple):
 loop = asyncio.get_event_loop()
 
 
-# Get sales for a set period of time (start & end date inclusively) --by promoter
-async def get_sales_by_promoter(vr_code: str, start_date, end_date=None) -> List[SaleEntry]:
-    if end_date is None:
-        end_date = start_date
+class DBConnection:
+    def __init__(self, host, port, user, password, db):
+        self.conn = None
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.db = db
 
-    conn = await aiomysql.connect(**db_config, loop=loop)
-    cur = await conn.cursor()
+    async def create(self):
+        self.conn = await aiomysql.connect(host=self.host, port=self.port, user=self.user,
+                                           password=self.password, db=self.db, loop=loop)
+        return self.conn
 
-    select_script = '''
-        SELECT telegreen_id, order_status, telegreen_total_count, 
-        telegreen_total_sum, telegreen_sname, telegreen_approved_date 
-        FROM telegreen_direct_orders
-        WHERE CAST(telegreen_approved_date AS date) 
-        BETWEEN CAST(%s AS date) AND CAST(%s AS datetime)
-        AND telegreen_sname = %s;'''
-
-    await cur.execute(select_script, (start_date, end_date, vr_code))
-    sale_entries = await cur.fetchall()
-    await cur.close()
-    conn.close()
-    return [SaleEntry(*entry) for entry in sale_entries]
+    async def close(self):
+        self.conn.close()
 
 
-# Get all sales for a set period of time (start & end date inclusively)
-async def get_all_sales(start_date, end_date=None) -> List[SaleEntry]:
-    if end_date is None:
-        end_date = start_date
+class ConnectorSalesBase:
+    def __init__(self, db: DBConnection):
+        self.db = db
 
-    conn = await aiomysql.connect(**db_config, loop=loop)
-    cur = await conn.cursor()
+    # Get sales for a set period of time (start & end date inclusively) --by promoter
+    async def get_sales_by_promoter(self, vr_code: str, start_date, end_date=None) -> List[SaleEntry]:
+        if end_date is None:
+            end_date = start_date
 
-    select_script = '''
-        SELECT telegreen_id, order_status, telegreen_total_count, 
-        telegreen_total_sum, telegreen_sname, telegreen_approved_date 
-        FROM telegreen_direct_orders
-        WHERE CAST(telegreen_approved_date AS date) 
-        BETWEEN CAST(%s AS date) AND CAST(%s AS datetime);'''
+        conn = await self.db.create()
+        cur = await conn.cursor()
 
-    await cur.execute(select_script, (start_date, end_date))
-    sale_entries = await cur.fetchall()
-    await cur.close()
-    conn.close()
-    return [SaleEntry(*entry) for entry in sale_entries]
+        select_script = '''
+            SELECT telegreen_id, order_status, telegreen_total_count, 
+            telegreen_total_sum, telegreen_sname, telegreen_approved_date 
+            FROM telegreen_direct_orders
+            WHERE CAST(telegreen_approved_date AS date) 
+            BETWEEN CAST(%s AS date) AND CAST(%s AS date)
+            AND telegreen_sname = %s
+            AND order_status = 'print';'''
 
+        await cur.execute(select_script, (start_date, end_date, vr_code))
+        sale_entries = await cur.fetchall()
+        await cur.close()
+        return [SaleEntry(*entry) for entry in sale_entries]
 
-# a = loop.run_until_complete(get_sales_by_promoter('vr96935', datetime(2022, 12, 1), '2022-12-01'))
-# b = loop.run_until_complete(get_sales_by_promoter('vr96935', datetime(2022, 12, 1)))
-# print(a == b)
+    # Get all sales for a set period of time (start & end date inclusively)
+    async def get_all_sales(self, start_date, end_date=None) -> List[SaleEntry]:
+        if end_date is None:
+            end_date = start_date
 
-test = loop.run_until_complete(get_sales_by_promoter('vr119787', datetime(2022, 12, 2), datetime(2022, 12, 3)))
-print(test)
+        conn = await self.db.create()
+        cur = await conn.cursor()
 
-test_all = loop.run_until_complete(get_all_sales(datetime(2022, 12, 3), datetime(2022, 12, 3)))
-print(test_all)
+        select_script = '''
+            SELECT telegreen_id, order_status, telegreen_total_count, 
+            telegreen_total_sum, telegreen_sname, telegreen_approved_date 
+            FROM telegreen_direct_orders
+            WHERE CAST(telegreen_approved_date AS date) 
+            BETWEEN CAST(%s AS date) AND CAST(%s AS date)
+            AND order_status = 'print';'''
+
+        await cur.execute(select_script, (start_date, end_date))
+        sale_entries = await cur.fetchall()
+        await cur.close()
+        return [SaleEntry(*entry) for entry in sale_entries]
