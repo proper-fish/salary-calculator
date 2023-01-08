@@ -33,6 +33,7 @@ def manager_day_salary(sales_number: List[int], is_regional: bool) -> float:
     return manager_salary(sales_number, is_regional)[1]
 
 
+# returns agent's week salary & today's salary
 def agent_salary(sales_number: List[int], is_regional: bool, is_new: bool) -> Tuple[float, float]:
     sales_sum = sum(sales_number[:])
 
@@ -62,20 +63,14 @@ def agent_salary(sales_number: List[int], is_regional: bool, is_new: bool) -> Tu
             else:
                 agent_ticket_prices = OLDER_AGENT_LVL15_TICKET_PRICES
 
-    every_day_sales = []
     min_sales = min(sales_number)
 
     if min_sales >= AGENT_RATES['rate2']:
-        for n in sales_number:
-            every_day_sales.append(n * agent_ticket_prices['rate2'])
+        return sales_sum * agent_ticket_prices['rate2'], sales_number[-1] * agent_ticket_prices['rate2']
     elif min_sales < AGENT_RATES['rate1']:
-        for n in sales_number:
-            every_day_sales.append(n * agent_ticket_prices['rate0'])
+        return sales_sum * agent_ticket_prices['rate0'], sales_number[-1] * agent_ticket_prices['rate0']
     else:
-        for n in sales_number:
-            every_day_sales.append(n * agent_ticket_prices['rate1'])
-
-    return sum(every_day_sales), every_day_sales[-1]
+        return sales_sum * agent_ticket_prices['rate1'], sales_number[-1] * agent_ticket_prices['rate1']
 
 
 def agent_week_salary(sales_number: List[int], is_regional: bool, is_new: bool) -> float:
