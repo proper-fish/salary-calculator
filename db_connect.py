@@ -21,6 +21,14 @@ class SaleEntry(NamedTuple):
     sale_time: datetime
 
 
+class Ticket(NamedTuple):
+    green_id: int
+    order_status: str
+    price: int
+    vr_code: str
+    sale_time: datetime
+
+
 loop = asyncio.get_event_loop()
 
 
