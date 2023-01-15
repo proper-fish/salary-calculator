@@ -97,3 +97,15 @@ REGIONAL_AGENT_LVL99_TICKET_PAYMENTS = {'rate0': 180,
                                         'rate1': 200,
                                         'rate2': 230,
                                         }
+
+AGENT_MANAGER_RATES = {'rate0': 0,
+                       'rate1': 16,
+                       }
+
+REGIONAL_AGENT_MANAGER_TICKET_PAYMENTS = {'rate0': 180,
+                                          'rate1': 230,
+                                          }
+
+REGULAR_AGENT_MANAGER_TICKET_PAYMENTS = {'rate0': 300,
+                                         'rate1': 350,
+                                         }
